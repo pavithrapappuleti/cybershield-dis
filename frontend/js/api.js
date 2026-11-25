@@ -1,6 +1,9 @@
+
 /**
  * CyberShield REST API Client
  */
+
+const API_BASE_URL = "https://cybershield-dis-1.onrender.com";
 
 const ApiClient = (() => {
   async function request(url, options = {}) {
@@ -12,16 +15,19 @@ const ApiClient = (() => {
       ...options,
     };
 
-    const response = await fetch(url, config);
+    const response = await fetch(`${API_BASE_URL}${url}`, config);
+
     const contentType = response.headers.get("content-type") || "";
     const data = contentType.includes("application/json")
       ? await response.json()
       : await response.text();
 
     if (!response.ok) {
-      const msg = (data && data.error) || `Request failed with status ${response.status}`;
+      const msg = (data && data.error) ||
+        `Request failed with status ${response.status}`;
       throw new Error(msg);
     }
+
     return data;
   }
 
