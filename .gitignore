@@ -1,0 +1,19 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Local SQLite database & test caches
+backend/database/*.db
+backend/database/*.sqlite*
+.pytest_cache/
+
+# Environment & IDE files
+.env
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

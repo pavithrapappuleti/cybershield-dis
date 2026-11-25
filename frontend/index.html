@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CyberShield Portal | Digital Immune Systems Knowledge Hub</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/portal.js" defer></script>
+</head>
+<body>
+  <div class="portal-shell">
+    <!-- User-Facing Top Navigation -->
+    <header class="portal-header">
+      <div class="portal-brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="26" height="26" fill="none">
+            <path d="M16 2L28 7V15C28 22.5 22.8 28.4 16 30C9.2 28.4 4 22.5 4 15V7L16 2Z" stroke="currentColor" stroke-width="2" fill="rgba(0, 212, 255, 0.14)"/>
+            <path d="M16 9V22M11 14L16 9L21 14" stroke="#00d4ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <span class="brand-name">CyberShield Portal</span>
+          <span class="brand-tagline">Digital Immune Systems Research Hub</span>
+        </div>
+      </div>
+
+      <nav class="portal-nav" aria-label="Portal Sections">
+        <button type="button" class="portal-tab active" data-section="learn">DIS Overview</button>
+        <button type="button" class="portal-tab" data-section="biology">Human vs Digital</button>
+        <button type="button" class="portal-tab" data-section="pillars">6 DIS Pillars</button>
+        <button type="button" class="portal-tab" data-section="usecases">Industry Use Cases</button>
+      </nav>
+
+      <div class="portal-actions">
+        <span id="portal-user-badge" class="chip" hidden>Signed in</span>
+        <button type="button" id="portal-logout-btn" class="btn btn-ghost btn-sm" hidden>Sign Out</button>
+        <a href="/admin" class="btn btn-secondary btn-sm">Admin SOC Console &#8594;</a>
+      </div>
+    </header>
+
+    <main class="portal-main">
+      <!-- User-Facing Service Banner (only shows friendly availability notice if an outage occurs) -->
+      <div id="portal-service-alert" class="info-banner portal-alert-warn" hidden>
+        <strong id="portal-service-alert-text">Service notice</strong>
+      </div>
+
+      <div class="portal-layout">
+        <!-- Left Column: User Sign-In & Account Workspace -->
+        <aside class="portal-auth-column">
+          <article id="user-login-card" class="glass-card panel">
+            <div class="panel-header">
+              <h1>User Portal Sign In</h1>
+              <span class="chip">Standard Access</span>
+            </div>
+            <p class="panel-desc">
+              Sign in to access personalized research notes, interactive system modules, and protected portal resources.
+            </p>
+            <div class="info-banner">
+              <strong>Demo User Account:</strong> <code>student</code> / <code>DemoPass@123</code>
+            </div>
+            <form id="portal-login-form" class="auth-form">
+              <label>
+                Username
+                <input type="text" id="portal-username" value="student" autocomplete="username" required>
+              </label>
+              <label>
+                Password
+                <input type="password" id="portal-password" placeholder="Enter your password" autocomplete="current-password" required>
+              </label>
+              <button type="submit" class="btn btn-primary">Sign In</button>
+            </form>
+            <div id="portal-login-feedback" class="detail-box" hidden></div>
+          </article>
+
+          <article id="user-workspace-card" class="glass-card panel" hidden>
+            <div class="panel-header">
+              <h2 id="portal-welcome-heading">Welcome</h2>
+              <span class="badge badge-resolved">Authenticated</span>
+            </div>
+            <p class="panel-desc">
+              You are signed in as a standard portal user. Explore the Digital Immune System modules or fetch portal resources below.
+            </p>
+            <div class="stack-list">
+              <button type="button" id="btn-fetch-portal-resources" class="btn btn-primary">Load Active Research Modules</button>
+              <button type="button" id="btn-probe-admin-diag" class="btn btn-ghost">Open Internal System Diagnostics</button>
+            </div>
+            <div id="portal-resource-output" class="detail-box" hidden></div>
+          </article>
+        </aside>
+
+        <!-- Right Column: Interactive Digital Immune System Explorer -->
+        <section class="portal-content-column" aria-label="Digital Immune Systems Explorer">
+          <article id="sec-learn" class="glass-card panel portal-section active">
+            <div class="panel-header">
+              <h2>What is a Digital Immune System (DIS)?</h2>
+              <span class="chip">Academic Concept</span>
+            </div>
+            <p class="portal-prose">
+              A <strong>Digital Immune System</strong> combines observability, threat detection, automated protection, chaos testing, and self-recovery engineering to make software resilient against cyberattacks and operational failures.
+            </p>
+            <div class="kpi-grid kpi-grid-3">
+              <div class="glass-card kpi-card">
+                <span class="kpi-label">1. Detect</span>
+                <p class="panel-desc">Continuously observe application logs, login patterns, API traffic, and health metrics.</p>
+              </div>
+              <div class="glass-card kpi-card">
+                <span class="kpi-label">2. Defend</span>
+                <p class="panel-desc">Analyze suspicious deviations, evaluate risk, and isolate malicious sources safely.</p>
+              </div>
+              <div class="glass-card kpi-card">
+                <span class="kpi-label">3. Recover &amp; Evolve</span>
+                <p class="panel-desc">Restore degraded services automatically and learn from historical incident patterns.</p>
+              </div>
+            </div>
+          </article>
+
+          <article id="sec-biology" class="glass-card panel portal-section" hidden>
+            <div class="panel-header">
+              <h2>Human Immune System vs. Digital Immune System</h2>
+              <span class="chip chip-purple">Bio-Inspired Defense</span>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Human Immune System</th>
+                    <th>Digital Immune System</th>
+                    <th>Role in Resilience</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Detects harmful bacteria or viruses</td>
+                    <td>Detects abnormal login bursts &amp; traffic spikes</td>
+                    <td>Early anomaly recognition</td>
+                  </tr>
+                  <tr>
+                    <td>Identifies infection type</td>
+                    <td>Analyses IP behaviour &amp; scores threat risk</td>
+                    <td>Distinguishes real attacks from typos</td>
+                  </tr>
+                  <tr>
+                    <td>Activates immune response &amp; antibodies</td>
+                    <td>Applies temporary isolation &amp; rate safeguards</td>
+                    <td>Contains impact without breaking normal users</td>
+                  </tr>
+                  <tr>
+                    <td>Heals damaged tissue</td>
+                    <td>Restores failed API or database states</td>
+                    <td>Reduces downtime via autoremediation</td>
+                  </tr>
+                  <tr>
+                    <td>Immune memory (B/T cells)</td>
+                    <td>Catalogs recurring signatures in incident memory</td>
+                    <td>Faster recognition on repeat threats</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <article id="sec-pillars" class="glass-card panel portal-section" hidden>
+            <div class="panel-header">
+              <h2>Six Core Components (Gartner DIS Framework)</h2>
+              <span class="chip">Software Engineering</span>
+            </div>
+            <div class="sim-grid">
+              <div class="glass-card kpi-card">
+                <strong>1. Observability</strong>
+                <p class="panel-desc">Captures real-time telemetry, latencies, errors, and authentication trails.</p>
+              </div>
+              <div class="glass-card kpi-card">
+                <strong>2. AI-Augmented Testing</strong>
+                <p class="panel-desc">Identifies weaknesses and edge cases before failures reach users.</p>
+              </div>
+              <div class="glass-card kpi-card">
+                <strong>3. Chaos Engineering</strong>
+                <p class="panel-desc">Injects controlled faults to verify resilience under stress.</p>
+              </div>
+              <div class="glass-card kpi-card">
+                <strong>4. Autoremediation</strong>
+                <p class="panel-desc">Executes automated containment and service recovery actions.</p>
+              </div>
+              <div class="glass-card kpi-card">
+                <strong>5. Site Reliability Engineering</strong>
+                <p class="panel-desc">Maintains availability targets, audit trails, and operational reliability.</p>
+              </div>
+              <div class="glass-card kpi-card">
+                <strong>6. Supply Chain Security</strong>
+                <p class="panel-desc">Protects codebases, packages, and deployment pipelines from tampering.</p>
+              </div>
+            </div>
+          </article>
+
+          <article id="sec-usecases" class="glass-card panel portal-section" hidden>
+            <div class="panel-header">
+              <h2>Real-World Industry Applications</h2>
+              <span class="chip">Impact</span>
+            </div>
+            <div class="sim-grid">
+              <div class="glass-card kpi-card">
+                <strong>Banking &amp; FinTech</strong>
+                <p class="panel-desc">Stops credential stuffing, isolates suspicious login bursts, and keeps payment APIs resilient.</p>
+              </div>
+              <div class="glass-card kpi-card">
+                <strong>Digital Healthcare</strong>
+                <p class="panel-desc">Protects patient portals and recovers critical clinical services with minimal downtime.</p>
+              </div>
+              <div class="glass-card kpi-card">
+                <strong>Cloud Platforms</strong>
+                <p class="panel-desc">Monitors microservice health and triggers self-healing restarts when nodes degrade.</p>
+              </div>
+              <div class="glass-card kpi-card">
+                <strong>Smart Cities &amp; IoT</strong>
+                <p class="panel-desc">Detects anomalous device polling and isolates compromised edge nodes safely.</p>
+              </div>
+            </div>
+          </article>
+        </section>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

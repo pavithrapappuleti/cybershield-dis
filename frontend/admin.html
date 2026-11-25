@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CyberShield Admin SOC | Digital Immune System</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="assets/chart.umd.min.js" defer></script>
+  <script src="js/api.js" defer></script>
+  <script src="js/charts.js" defer></script>
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+  <!-- Admin-Only Authentication Gate -->
+  <div id="admin-auth-gate" class="admin-gate">
+    <article class="glass-card admin-login-card">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="28" height="28" fill="none">
+            <path d="M16 2L28 7V15C28 22.5 22.8 28.4 16 30C9.2 28.4 4 22.5 4 15V7L16 2Z" stroke="currentColor" stroke-width="2" fill="rgba(0, 212, 255, 0.14)"/>
+            <path d="M16 9V22M11 14L16 9L21 14" stroke="#00d4ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">CyberShield Admin SOC</span>
+          <span class="brand-tagline">Detect. Defend. Recover. Evolve.</span>
+        </div>
+      </div>
+
+      <p class="panel-desc">
+        Restricted Security Operations Console. Threat telemetry, risk analysis, automated containment, and self-recovery logs are visible only to administrators.
+      </p>
+
+      <div class="info-banner">
+        <strong>Demo Admin Credentials:</strong> Username <code>admin</code> / Password <code>AdminShield@2026</code>
+      </div>
+
+      <form id="admin-login-form" class="auth-form">
+        <label>
+          Admin Username
+          <input type="text" id="admin-username" value="admin" autocomplete="username" required>
+        </label>
+        <label>
+          Admin Password
+          <input type="password" id="admin-password" placeholder="Enter Admin password" autocomplete="current-password" required>
+        </label>
+        <div class="inline-controls">
+          <button type="submit" class="btn btn-primary">Sign In to SOC Console</button>
+          <a href="/" class="btn btn-ghost">Back to User Portal</a>
+        </div>
+      </form>
+      <p id="admin-login-error" class="error-text" hidden></p>
+    </article>
+  </div>
+
+  <div id="admin-app-shell" class="app-shell" hidden>
+    <div id="sidebar-backdrop" class="sidebar-backdrop" hidden></div>
+
+    <aside id="sidebar" class="sidebar" aria-label="Admin SOC Navigation">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="28" height="28" fill="none">
+            <path d="M16 2L28 7V15C28 22.5 22.8 28.4 16 30C9.2 28.4 4 22.5 4 15V7L16 2Z" stroke="currentColor" stroke-width="2" fill="rgba(0, 212, 255, 0.14)"/>
+            <path d="M16 9V22M11 14L16 9L21 14" stroke="#00d4ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">CyberShield</span>
+          <span class="brand-tagline">Admin SOC · Detect. Defend. Recover.</span>
+        </div>
+        <button type="button" id="close-sidebar-btn" class="icon-btn mobile-only" aria-label="Close navigation menu">&times;</button>
+      </div>
+
+      <nav class="nav-list">
+        <button type="button" class="nav-item active" data-page="overview">
+          <span class="nav-dot" aria-hidden="true"></span>
+          <span>Security Overview</span>
+        </button>
+        <button type="button" class="nav-item" data-page="monitoring">
+          <span class="nav-dot" aria-hidden="true"></span>
+          <span>System Monitoring</span>
+        </button>
+        <button type="button" class="nav-item" data-page="detection">
+          <span class="nav-dot" aria-hidden="true"></span>
+          <span>Threat Detection</span>
+        </button>
+        <button type="button" class="nav-item" data-page="risk">
+          <span class="nav-dot" aria-hidden="true"></span>
+          <span>Risk Analysis</span>
+        </button>
+        <button type="button" class="nav-item" data-page="response">
+          <span class="nav-dot" aria-hidden="true"></span>
+          <span>Automated Response</span>
+        </button>
+        <button type="button" class="nav-item" data-page="recovery">
+          <span class="nav-dot" aria-hidden="true"></span>
+          <span>Self-Recovery</span>
+        </button>
+        <button type="button" class="nav-item" data-page="incidents">
+          <span class="nav-dot" aria-hidden="true"></span>
+          <span>Incident Management</span>
+        </button>
+        <button type="button" class="nav-item" data-page="immune">
+          <span class="nav-dot" aria-hidden="true"></span>
+          <span>Digital Immune Memory</span>
+        </button>
+        <button type="button" class="nav-item nav-highlight" data-page="simulation">
+          <span class="nav-dot" aria-hidden="true"></span>
+          <span>Simulation Lab</span>
+        </button>
+        <button type="button" class="nav-item" data-page="reports">
+          <span class="nav-dot" aria-hidden="true"></span>
+          <span>Reports &amp; Analytics</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="env-badge">
+          <span class="pulse-dot" aria-hidden="true"></span>
+          <span>Admin-Only Backend View</span>
+        </div>
+        <p class="sidebar-note">End-users on the public portal cannot see threats, scores, or recovery logs.</p>
+      </div>
+    </aside>
+
+    <div class="main-column">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button type="button" id="open-sidebar-btn" class="icon-btn mobile-only" aria-label="Open navigation menu" aria-expanded="false">&#9776;</button>
+          <div>
+            <p class="topbar-eyebrow">Admin-Only Digital Immune System Console</p>
+            <h1 id="page-title" class="page-title">Security Overview</h1>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <div id="global-status-pill" class="status-pill status-healthy" aria-live="polite">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span id="global-status-text">System: Healthy</span>
+          </div>
+          <label class="toggle-label">
+            <input type="checkbox" id="toggle-live-sync" checked>
+            <span>Live Sync (5s)</span>
+          </label>
+          <a href="/" target="_blank" rel="noopener" class="btn btn-primary">
+            Open User Portal &#8599;
+          </a>
+          <button type="button" id="refresh-current-btn" class="btn btn-secondary">
+            Refresh
+          </button>
+          <button type="button" id="reset-demo-btn" class="btn btn-ghost">
+            Reset Baseline
+          </button>
+          <button type="button" id="admin-logout-btn" class="btn btn-danger btn-sm">
+            Sign Out
+          </button>
+        </div>
+      </header>
+
+      <main id="main-content" class="main-content">
+        <div id="loading-bar" class="loading-bar" hidden aria-live="polite">
+          Synchronizing telemetry with SQLite backend...
+        </div>
+
+        <!-- PAGE 1: Security Overview -->
+        <section id="page-overview" class="page-view active" aria-label="Security Overview">
+          <div class="kpi-grid">
+            <article class="glass-card kpi-card">
+              <span class="kpi-label">Overall System Health</span>
+              <strong id="kpi-health" class="kpi-value">Healthy</strong>
+              <span id="kpi-health-sub" class="kpi-sub">All services operational</span>
+            </article>
+            <article class="glass-card kpi-card">
+              <span class="kpi-label">Total Security Events</span>
+              <strong id="kpi-total-events" class="kpi-value">0</strong>
+              <span class="kpi-sub">Persisted SQLite telemetry</span>
+            </article>
+            <article class="glass-card kpi-card">
+              <span class="kpi-label">Detected Threats</span>
+              <strong id="kpi-threats" class="kpi-value">0</strong>
+              <span class="kpi-sub">Rule-threshold breaches</span>
+            </article>
+            <article class="glass-card kpi-card">
+              <span class="kpi-label">Open Critical Incidents</span>
+              <strong id="kpi-critical" class="kpi-value">0</strong>
+              <span id="kpi-critical-sub" class="kpi-sub">Requires immediate review</span>
+            </article>
+            <article class="glass-card kpi-card">
+              <span class="kpi-label">Active Simulated Blocks</span>
+              <strong id="kpi-blocks" class="kpi-value">0</strong>
+              <span class="kpi-sub">RFC 5737 test IP isolation</span>
+            </article>
+            <article class="glass-card kpi-card">
+              <span class="kpi-label">Service Availability</span>
+              <strong id="kpi-availability" class="kpi-value">100%</strong>
+              <span id="kpi-latency-sub" class="kpi-sub">Avg response: 0 ms</span>
+            </article>
+          </div>
+
+          <div class="chart-grid">
+            <article class="glass-card panel chart-panel">
+              <div class="panel-header">
+                <h2>System Health &amp; Availability Trend</h2>
+                <span class="chip">Live Snapshots</span>
+              </div>
+              <div class="chart-wrap">
+                <canvas id="chart-health-trend"></canvas>
+              </div>
+            </article>
+            <article class="glass-card panel chart-panel">
+              <div class="panel-header">
+                <h2>Daily Incident &amp; Event Trend</h2>
+                <span class="chip">7-Day Window</span>
+              </div>
+              <div class="chart-wrap">
+                <canvas id="chart-daily-trend"></canvas>
+              </div>
+            </article>
+            <article class="glass-card panel chart-panel">
+              <div class="panel-header">
+                <h2>Threat Severity Distribution</h2>
+                <span class="chip">Database Totals</span>
+              </div>
+              <div class="chart-wrap">
+                <canvas id="chart-severity-dist"></canvas>
+              </div>
+            </article>
+          </div>
+
+          <div class="split-grid">
+            <article class="glass-card panel">
+              <div class="panel-header">
+                <h2>Recent Security Activities</h2>
+                <button type="button" class="btn btn-link" data-goto="detection">View All Events</button>
+              </div>
+              <div class="table-scroll">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Time (UTC)</th>
+                      <th>Source IP</th>
+                      <th>Event Type</th>
+                      <th>Risk</th>
+                      <th>Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody id="overview-activities-body"></tbody>
+                </table>
+              </div>
+            </article>
+
+            <article class="glass-card panel">
+              <div class="panel-header">
+                <h2>Recent Incidents</h2>
+                <button type="button" class="btn btn-link" data-goto="incidents">Manage Incidents</button>
+              </div>
+              <div id="overview-incidents-list" class="stack-list"></div>
+            </article>
+          </div>
+        </section>
+
+        <!-- PAGE 2: System Monitoring -->
+        <section id="page-monitoring" class="page-view" aria-label="System Monitoring" hidden>
+          <div class="info-banner">
+            <strong>Telemetry Transparency:</strong> Real metrics below measure the local Flask process and SQLite connection directly. Simulated service states are local flags used safely for failure and self-recovery demonstrations.
+          </div>
+
+          <div class="split-grid">
+            <article class="glass-card panel">
+              <div class="panel-header">
+                <h2>Real Flask &amp; SQLite Metrics</h2>
+                <button type="button" id="manual-monitor-refresh-btn" class="btn btn-primary btn-sm">Manual Health Snapshot</button>
+              </div>
+              <dl id="real-metrics-list" class="metric-dl"></dl>
+            </article>
+
+            <article class="glass-card panel">
+              <div class="panel-header">
+                <h2>Simulated Application Service State</h2>
+                <span class="chip chip-purple">Academic Sandbox</span>
+              </div>
+              <dl id="simulated-metrics-list" class="metric-dl"></dl>
+            </article>
+          </div>
+
+          <article class="glass-card panel">
+            <div class="panel-header">
+              <h2>Application Monitoring Event Log</h2>
+              <span class="chip">Real-time Process Buffer</span>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>Category</th>
+                    <th>Level</th>
+                    <th>Source</th>
+                    <th>Scope</th>
+                    <th>Message</th>
+                  </tr>
+                </thead>
+                <tbody id="monitoring-log-body"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <!-- PAGE 3: Threat Detection -->
+        <section id="page-detection" class="page-view" aria-label="Threat Detection" hidden>
+          <article class="glass-card panel">
+            <div class="panel-header">
+              <h2>Configurable Rule-Based Detection Thresholds</h2>
+              <span class="chip">False-Alarm Prevention Active</span>
+            </div>
+            <p class="panel-desc">Single isolated anomalies or normal baseline traffic are logged without raising false incidents. Adjust thresholds below and click Save to persist rules in SQLite.</p>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Rule</th>
+                    <th>Event Type</th>
+                    <th>Threshold</th>
+                    <th>Window (s)</th>
+                    <th>Auto-Block</th>
+                    <th>Human Approval</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="rules-table-body"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="glass-card panel">
+            <div class="panel-header">
+              <h2>Analyzed Security Events</h2>
+              <div class="inline-controls">
+                <label class="toggle-label">
+                  <input type="checkbox" id="events-threats-only">
+                  <span>Threats Only</span>
+                </label>
+              </div>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>Source IP</th>
+                    <th>Event Type</th>
+                    <th>Endpoint</th>
+                    <th>Risk Score</th>
+                    <th>Severity</th>
+                    <th>Threat?</th>
+                    <th>Detection Explanation</th>
+                  </tr>
+                </thead>
+                <tbody id="events-table-body"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <!-- PAGE 4: Risk Analysis -->
+        <section id="page-risk" class="page-view" aria-label="Risk Analysis" hidden>
+          <div class="info-banner">
+            <strong>Explainable Risk Engine:</strong> CyberShield currently computes deterministic, explainable 0–100 risk scores via weighted rule factors (<code>ExplainableRuleRiskAnalyzer</code>). Its modular <code>BaseRiskAnalyzer</code> interface supports plugging in an ML anomaly model in future work without claiming ML is active today.
+          </div>
+
+          <div class="split-grid">
+            <article class="glass-card panel">
+              <div class="panel-header">
+                <h2>Select Incident for Risk Inspection</h2>
+                <span class="chip">0–100 Scoring</span>
+              </div>
+              <div id="risk-incident-selector" class="stack-list"></div>
+            </article>
+
+            <article class="glass-card panel">
+              <div class="panel-header">
+                <h2>Explainable Risk Breakdown</h2>
+                <span id="risk-selected-badge" class="badge badge-low">Select Incident</span>
+              </div>
+              <div id="risk-detail-panel" class="risk-detail-body">
+                <p class="empty-state">Select an incident on the left to inspect its weighted risk calculation.</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- PAGE 5: Automated Response -->
+        <section id="page-response" class="page-view" aria-label="Automated Response" hidden>
+          <div class="info-banner">
+            <strong>Safety Safeguard Policy:</strong> Automated blocking applies strictly to simulated RFC 5737 test IP addresses (<code>192.0.2.x</code>, <code>198.51.100.x</code>, <code>203.0.113.x</code>). No OS firewall or external network modifications are ever performed.
+          </div>
+
+          <article class="glass-card panel">
+            <div class="panel-header">
+              <h2>Simulated Blocked Sources &amp; Human-Approval Queue</h2>
+              <span id="blocks-summary-chip" class="chip">0 Active</span>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Simulated IP</th>
+                    <th>Status</th>
+                    <th>Severity / Risk</th>
+                    <th>Mode</th>
+                    <th>Reason</th>
+                    <th>Blocked At</th>
+                    <th>Controls</th>
+                  </tr>
+                </thead>
+                <tbody id="blocked-sources-body"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <!-- PAGE 6: Self-Recovery -->
+        <section id="page-recovery" class="page-view" aria-label="Self-Recovery" hidden>
+          <div class="info-banner">
+            <strong>Local Simulation Scope:</strong> Self-Recovery restores simulated local service flags and validates local SQLite health. It does not claim to repair external production servers.
+          </div>
+
+          <div class="kpi-grid kpi-grid-4">
+            <article class="glass-card kpi-card">
+              <span class="kpi-label">API Gateway State</span>
+              <strong id="rec-api-state" class="kpi-value">Operational</strong>
+            </article>
+            <article class="glass-card kpi-card">
+              <span class="kpi-label">Database Pool State</span>
+              <strong id="rec-db-state" class="kpi-value">Operational</strong>
+            </article>
+            <article class="glass-card kpi-card">
+              <span class="kpi-label">Core Worker State</span>
+              <strong id="rec-svc-state" class="kpi-value">Operational</strong>
+            </article>
+            <article class="glass-card kpi-card">
+              <span class="kpi-label">Avg Recovery Duration</span>
+              <strong id="rec-avg-ms" class="kpi-value">0 ms</strong>
+            </article>
+          </div>
+
+          <article class="glass-card panel">
+            <div class="panel-header">
+              <h2>Recovery Controls &amp; Autonomous Self-Healing</h2>
+              <div class="inline-controls">
+                <label class="toggle-label">
+                  <input type="checkbox" id="toggle-auto-heal" checked>
+                  <span id="auto-heal-status-label">Autonomous Watchdog: ON (6s)</span>
+                </label>
+                <button type="button" class="btn btn-primary" data-recover="auto">Run Auto-Recovery</button>
+                <button type="button" class="btn btn-secondary" data-recover="api_failure">Restore API State</button>
+                <button type="button" class="btn btn-secondary" data-recover="database_failure">Recycle DB Pool</button>
+              </div>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Failure Detected</th>
+                    <th>Failure Type</th>
+                    <th>Recovery Action</th>
+                    <th>Status</th>
+                    <th>Duration</th>
+                    <th>Health Transition</th>
+                  </tr>
+                </thead>
+                <tbody id="recovery-history-body"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <!-- PAGE 7: Incident Management -->
+        <section id="page-incidents" class="page-view" aria-label="Incident Management" hidden>
+          <article class="glass-card panel">
+            <div class="panel-header">
+              <h2>Security Incident Queue</h2>
+              <span id="incidents-count-chip" class="chip">0 Incidents</span>
+            </div>
+
+            <search>
+              <form id="incident-filter-form" class="filter-bar">
+                <input type="search" id="inc-search" placeholder="Search code, IP, title, or reason..." aria-label="Search incidents">
+                <select id="inc-severity" aria-label="Filter by severity">
+                  <option value="">All Severities</option>
+                  <option value="Critical">Critical</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                </select>
+                <select id="inc-status" aria-label="Filter by status">
+                  <option value="">All Statuses</option>
+                  <option value="New">New</option>
+                  <option value="Investigating">Investigating</option>
+                  <option value="Resolved">Resolved</option>
+                  <option value="False Positive">False Positive</option>
+                </select>
+                <input type="date" id="inc-date-from" aria-label="From date">
+                <input type="date" id="inc-date-to" aria-label="To date">
+                <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
+                <button type="button" id="inc-clear-filters" class="btn btn-ghost btn-sm">Clear</button>
+              </form>
+            </search>
+
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Code</th>
+                    <th>Title</th>
+                    <th>Source IP</th>
+                    <th>Severity</th>
+                    <th>Risk</th>
+                    <th>Status</th>
+                    <th>Created (UTC)</th>
+                    <th>Inspect</th>
+                  </tr>
+                </thead>
+                <tbody id="incidents-table-body"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <!-- PAGE 8: Digital Immune Memory -->
+        <section id="page-immune" class="page-view" aria-label="Digital Immune Memory" hidden>
+          <div class="info-banner">
+            <strong>Historical Pattern Tracking:</strong> Inspired by biological immune memory, CyberShield stores historical incident signatures, tracks recurring attacks, and increases rule sensitivity weights when patterns repeat. This is deterministic pattern tracking, not autonomous biological memory or self-training ML.
+          </div>
+
+          <div class="kpi-grid kpi-grid-3">
+            <article class="glass-card kpi-card">
+              <span class="kpi-label">Cataloged Signatures</span>
+              <strong id="immune-total-sigs" class="kpi-value">0</strong>
+            </article>
+            <article class="glass-card kpi-card">
+              <span class="kpi-label">Recurring Threat Patterns</span>
+              <strong id="immune-recurring-count" class="kpi-value">0</strong>
+            </article>
+            <article class="glass-card kpi-card">
+              <span class="kpi-label">Pattern Engine Mode</span>
+              <strong class="kpi-value kpi-value-sm">Deterministic Memory</strong>
+            </article>
+          </div>
+
+          <article class="glass-card panel">
+            <div class="panel-header">
+              <h2>Known Attack Signatures &amp; Prior Responses</h2>
+              <span class="chip">Adaptive Rule Feedback</span>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Signature</th>
+                    <th>Event Type</th>
+                    <th>Incidents</th>
+                    <th>Total Hits</th>
+                    <th>Highest Severity</th>
+                    <th>Rule Sensitivity Boost</th>
+                    <th>Previous Responses</th>
+                  </tr>
+                </thead>
+                <tbody id="immune-patterns-body"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <!-- PAGE 9: Security Simulation Lab -->
+        <section id="page-simulation" class="page-view" aria-label="Security Simulation Lab" hidden>
+          <div class="info-banner">
+            <strong>College Presentation Testbed:</strong> Trigger safe, locally confined scenarios below (or perform real failed logins in the User Portal) to demonstrate the 9-stage Digital Immune System workflow in real time.
+          </div>
+
+          <div class="sim-grid">
+            <article class="glass-card sim-card">
+              <h3>1. Repeated Failed Logins</h3>
+              <p>Simulates brute-force login attempts from a safe RFC 5737 test IP, triggering detection, risk scoring, incident creation, and temporary IP blocking.</p>
+              <div class="sim-inputs">
+                <label>Test IP <input type="text" id="sim-login-ip" value="203.0.113.45"></label>
+                <label>Attempts <input type="number" id="sim-login-attempts" value="7" min="1" max="50"></label>
+              </div>
+              <button type="button" id="btn-sim-failed-logins" class="btn btn-primary">Simulate Failed Logins</button>
+            </article>
+
+            <article class="glass-card sim-card">
+              <h3>2. Suspicious Request Burst</h3>
+              <p>Simulates rapid API polling exceeding configured request-frequency thresholds from a test IP.</p>
+              <div class="sim-inputs">
+                <label>Test IP <input type="text" id="sim-traffic-ip" value="198.51.100.64"></label>
+                <label>Requests <input type="number" id="sim-traffic-count" value="65" min="1" max="500"></label>
+              </div>
+              <button type="button" id="btn-sim-suspicious-traffic" class="btn btn-primary">Simulate Traffic Spike</button>
+            </article>
+
+            <article class="glass-card sim-card">
+              <h3>3. Restricted Endpoint Probe</h3>
+              <p>Simulates repeated unauthorized probes against a protected administrative debug endpoint.</p>
+              <div class="sim-inputs">
+                <label>Test IP <input type="text" id="sim-probe-ip" value="203.0.113.99"></label>
+                <label>Probes <input type="number" id="sim-probe-count" value="3" min="1" max="20"></label>
+              </div>
+              <button type="button" id="btn-sim-restricted" class="btn btn-secondary">Simulate Restricted Probe</button>
+            </article>
+
+            <article class="glass-card sim-card">
+              <h3>4. API Service Failure</h3>
+              <p>Injects a local simulated API gateway failure, transitions health to Critical, and logs an availability incident.</p>
+              <button type="button" id="btn-sim-api-failure" class="btn btn-danger">Simulate API Failure</button>
+            </article>
+
+            <article class="glass-card sim-card">
+              <h3>5. Database Failure</h3>
+              <p>Simulates a database connection pool outage while keeping local recovery diagnostics available.</p>
+              <button type="button" id="btn-sim-db-failure" class="btn btn-danger">Simulate DB Failure</button>
+            </article>
+
+            <article class="glass-card sim-card">
+              <h3>6. Excessive Error Events</h3>
+              <p>Simulates a burst of HTTP 500 error events that degrades service stability and triggers circuit-breaker recovery.</p>
+              <button type="button" id="btn-sim-excessive-errors" class="btn btn-danger">Simulate Error Spike</button>
+            </article>
+
+            <article class="glass-card sim-card">
+              <h3>7. Trigger Self-Recovery</h3>
+              <p>Runs the Self-Recovery Engine to restore failed simulated services, re-verify SQLite health, and resolve outage incidents.</p>
+              <button type="button" id="btn-sim-recovery" class="btn btn-success">Execute Self-Recovery</button>
+            </article>
+
+            <article class="glass-card sim-card">
+              <h3>8. Normal Baseline Traffic</h3>
+              <p>Generates legitimate user traffic to verify zero false-alarm blocking or spurious incident escalation.</p>
+              <button type="button" id="btn-sim-normal" class="btn btn-secondary">Generate Normal Traffic</button>
+            </article>
+          </div>
+
+          <article class="glass-card panel">
+            <div class="panel-header">
+              <h2>Live Workflow Execution Timeline</h2>
+              <span id="sim-result-badge" class="chip">Awaiting Simulation</span>
+            </div>
+            <div id="sim-timeline-container" class="timeline-steps">
+              <p class="empty-state">Trigger any simulation scenario above to watch the 9-stage Digital Immune System pipeline execute step by step.</p>
+            </div>
+          </article>
+        </section>
+
+        <!-- PAGE 10: Reports and Analytics -->
+        <section id="page-reports" class="page-view" aria-label="Reports and Analytics" hidden>
+          <div class="panel-header reports-toolbar">
+            <div>
+              <h2>Security &amp; Recovery Analytics</h2>
+              <p class="panel-desc">Live aggregate metrics computed directly from SQLite records.</p>
+            </div>
+            <a id="export-csv-link" href="/api/reports/export" class="btn btn-primary" download>Export CSV Report</a>
+          </div>
+
+          <div class="kpi-grid kpi-grid-4">
+            <article class="glass-card kpi-card">
+              <span class="kpi-label">Total Events Analyzed</span>
+              <strong id="rep-total-events" class="kpi-value">0</strong>
+            </article>
+            <article class="glass-card kpi-card">
+              <span class="kpi-label">Total Incidents Logged</span>
+              <strong id="rep-total-incidents" class="kpi-value">0</strong>
+            </article>
+            <article class="glass-card kpi-card">
+              <span class="kpi-label">Recovery Success Rate</span>
+              <strong id="rep-rec-rate" class="kpi-value">100%</strong>
+            </article>
+            <article class="glass-card kpi-card">
+              <span class="kpi-label">Mean Recovery Time</span>
+              <strong id="rep-rec-avg" class="kpi-value">0 ms</strong>
+            </article>
+          </div>
+
+          <div class="chart-grid">
+            <article class="glass-card panel chart-panel">
+              <div class="panel-header">
+                <h2>Most Common Event Types</h2>
+              </div>
+              <div class="chart-wrap">
+                <canvas id="chart-report-events"></canvas>
+              </div>
+            </article>
+            <article class="glass-card panel chart-panel">
+              <div class="panel-header">
+                <h2>Incident Resolution Status</h2>
+              </div>
+              <div class="chart-wrap">
+                <canvas id="chart-report-resolution"></canvas>
+              </div>
+            </article>
+            <article class="glass-card panel chart-panel">
+              <div class="panel-header">
+                <h2>7-Day Total vs Threat Events</h2>
+              </div>
+              <div class="chart-wrap">
+                <canvas id="chart-report-trends"></canvas>
+              </div>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Native Accessible Incident Inspection Modal -->
+  <dialog id="incident-modal" class="soc-dialog" closedby="any" aria-labelledby="modal-inc-title">
+    <div class="dialog-header">
+      <div>
+        <span id="modal-inc-code" class="chip">INC-0000</span>
+        <h1 id="modal-inc-title" class="dialog-title">Incident Details</h1>
+      </div>
+      <form method="dialog">
+        <button type="submit" value="close" class="icon-btn" aria-label="Close incident details">&times;</button>
+      </form>
+    </div>
+
+    <div class="dialog-body">
+      <div id="modal-inc-summary" class="modal-summary-grid"></div>
+
+      <section class="modal-section">
+        <h2>Detection Reason &amp; Automated Response</h2>
+        <p id="modal-inc-reason" class="detail-box"></p>
+        <p id="modal-inc-response" class="detail-box"></p>
+      </section>
+
+      <section class="modal-section">
+        <h2>Update Incident Status</h2>
+        <form id="modal-status-form" class="status-update-form">
+          <select id="modal-status-select" aria-label="New incident status">
+            <option value="New">New</option>
+            <option value="Investigating">Investigating</option>
+            <option value="Resolved">Resolved</option>
+            <option value="False Positive">False Positive</option>
+          </select>
+          <input type="text" id="modal-status-notes" placeholder="Optional analyst investigation note...">
+          <button type="submit" class="btn btn-primary btn-sm">Update Status</button>
+        </form>
+      </section>
+
+      <section class="modal-section">
+        <h2>Chronological Incident Timeline</h2>
+        <ol id="modal-inc-timeline" class="audit-timeline"></ol>
+      </section>
+    </div>
+  </dialog>
+
+  <!-- Accessible Toast Notification Container -->
+  <div id="toast-region" class="toast-region" role="region" aria-label="Notifications" aria-live="polite"></div>
+</body>
+</html>
