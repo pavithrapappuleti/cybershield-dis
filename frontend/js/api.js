@@ -1,9 +1,6 @@
-
 /**
  * CyberShield REST API Client
  */
-
-const API_BASE_URL = "https://cybershield-dis-1.onrender.com";
 
 const ApiClient = (() => {
   async function request(url, options = {}) {
@@ -15,19 +12,16 @@ const ApiClient = (() => {
       ...options,
     };
 
-    const response = await fetch(`${API_BASE_URL}${url}`, config);
-
+    const response = await fetch(url, config);
     const contentType = response.headers.get("content-type") || "";
     const data = contentType.includes("application/json")
       ? await response.json()
       : await response.text();
 
     if (!response.ok) {
-      const msg = (data && data.error) ||
-        `Request failed with status ${response.status}`;
+      const msg = (data && data.error) || `Request failed with status ${response.status}`;
       throw new Error(msg);
     }
-
     return data;
   }
 
@@ -53,10 +47,21 @@ const ApiClient = (() => {
     updateIncidentStatus: (id, payload) =>
       request(`/api/incidents/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
     getBlockedSources: () => request("/api/blocked-sources"),
-    unblockSource: (id) =>
+    unblockSource: (id, resolveIncident = false) =>
       request(`/api/blocked-sources/${id}/unblock`, {
         method: "POST",
-        body: JSON.stringify({ actor: "SOC Administrator" }),
+        body: JSON.stringify({
+          actor: "Admin Monitor",
+          resolve_incident: resolveIncident,
+        }),
+      }),
+    clearLoginAlerts: (sourceIp = null) =>
+      request("/api/alerts/clear", {
+        method: "POST",
+        body: JSON.stringify({
+          source_ip: sourceIp,
+          resolve_login_incidents: true,
+        }),
       }),
     approveBlock: (id) =>
       request(`/api/blocked-sources/${id}/approve`, {

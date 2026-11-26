@@ -276,6 +276,72 @@ class CyberShieldTestCase(unittest.TestCase):
         self.assertEqual(client.get("/api/dashboard").status_code, 200)
         self.assertEqual(client.get("/api/incidents").status_code, 200)
 
+    def test_10_multiple_wrong_logins_trigger_system_warning_and_clear(self):
+        """Ensure 2+ wrong login attempts trigger System: Warning, and Unblock/Clear restores Healthy."""
+        ip = "192.0.2.175"
+
+        # 1st wrong attempt -> Healthy (no false alarm)
+        self.client.post(
+            "/api/auth/login",
+            json={"username": "student", "password": "bad1"},
+            headers={"X-Simulated-Client-IP": ip},
+        )
+        dash1 = self.client.get("/api/dashboard").get_json()
+        self.assertEqual(dash1["system_status"], "Healthy")
+        self.assertEqual(len(dash1["login_warnings"]), 0)
+        self.assertEqual(dash1["summary"]["recent_wrong_logins"], 1)
+
+        # 2nd and 3rd wrong attempts -> System: Warning + Multiple Wrong Login alert
+        for pw in ("bad2", "bad3"):
+            r = self.client.post(
+                "/api/auth/login",
+                json={"username": "student", "password": pw},
+                headers={"X-Simulated-Client-IP": ip},
+            )
+            self.assertEqual(r.status_code, 401)
+            self.assertFalse(r.get_json()["locked"])
+
+        dash3 = self.client.get("/api/dashboard").get_json()
+        self.assertEqual(dash3["system_status"], "Warning")
+        self.assertEqual(dash3["summary"]["recent_wrong_logins"], 3)
+        self.assertEqual(len(dash3["login_warnings"]), 1)
+        self.assertEqual(dash3["login_warnings"][0]["attempts"], 3)
+        self.assertFalse(dash3["login_warnings"][0]["blocked"])
+
+        # Clear warning returns system cleanly to Healthy and resets streak
+        cleared = self.client.post("/api/alerts/clear", json={"source_ip": ip})
+        self.assertEqual(cleared.status_code, 200)
+        self.assertEqual(cleared.get_json()["health"]["overall_status"], "Healthy")
+        self.assertEqual(cleared.get_json()["health"]["recent_wrong_logins"], 0)
+
+        # 5 wrong attempts from fresh streak -> blocked, then 1-click Unblock + resolve_incident restores Healthy
+        for i in range(5):
+            r = self.client.post(
+                "/api/auth/login",
+                json={"username": "student", "password": f"wrong{i}"},
+                headers={"X-Simulated-Client-IP": ip},
+            )
+            expected_code = 403 if i == 4 else 401
+            self.assertEqual(r.status_code, expected_code)
+
+        blocks = self.client.get("/api/blocked-sources").get_json()["blocked_sources"]
+        blk = next(b for b in blocks if b["source_ip"] == ip and b["is_active"])
+        ub = self.client.post(
+            f"/api/blocked-sources/{blk['id']}/unblock",
+            json={"resolve_incident": True},
+        )
+        self.assertEqual(ub.status_code, 200)
+        self.assertEqual(self.client.get("/api/dashboard").get_json()["system_status"], "Healthy")
+
+        # Next single wrong attempt after unblock starts at 1/5 instead of instant re-block
+        after_ub = self.client.post(
+            "/api/auth/login",
+            json={"username": "student", "password": "typo"},
+            headers={"X-Simulated-Client-IP": ip},
+        )
+        self.assertEqual(after_ub.status_code, 401)
+        self.assertFalse(after_ub.get_json()["locked"])
+
 
 if __name__ == "__main__":
     unittest.main()

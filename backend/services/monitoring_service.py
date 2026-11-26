@@ -6,14 +6,14 @@ safe academic failure and self-recovery demonstrations.
 """
 
 from collections import deque
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import json
 import threading
 import time
 from sqlalchemy import text
 
 from extensions import db
-from models import BlockedSource, SystemHealth, ThreatIncident
+from models import BlockedSource, SecurityEvent, SecurityRule, SystemHealth, ThreatIncident
 
 # Real in-process application telemetry
 _START_MONOTONIC = time.monotonic()
@@ -40,6 +40,7 @@ _AUTO_HEAL_CONFIG = {
 }
 _WATCHDOG_STARTED = False
 _WATCHDOG_LOCK = threading.Lock()
+_LOGIN_WARNING_DISMISSED_AT = {}
 
 
 def record_monitoring_log(category, message, level="INFO", source="FlaskMonitor", is_simulated=False):
@@ -206,6 +207,7 @@ def reset_monitoring_state():
     """Reset simulated state and error counters for a clean demo baseline."""
     global _REAL_ERROR_COUNT
     _REAL_ERROR_COUNT = 0
+    _LOGIN_WARNING_DISMISSED_AT.clear()
     _SIMULATED_STATE["api_status"] = "Operational"
     _SIMULATED_STATE["database_status"] = "Operational"
     _SIMULATED_STATE["service_status"] = "Operational"
@@ -220,6 +222,150 @@ def reset_monitoring_state():
         source="FlaskMonitor",
         is_simulated=False,
     )
+
+
+def _as_naive_utc(dt):
+    return dt.replace(tzinfo=None) if dt and dt.tzinfo else dt
+
+
+def get_login_streak_cutoff(source_ip, since_naive):
+    """Return (cutoff_dt, is_explicit_clear) so unblocked/resolved/dismissed streaks restart cleanly."""
+    cutoff = _LOGIN_WARNING_DISMISSED_AT.get(source_ip)
+    wildcard_cutoff = _LOGIN_WARNING_DISMISSED_AT.get("*")
+    if wildcard_cutoff and (cutoff is None or wildcard_cutoff > cutoff):
+        cutoff = wildcard_cutoff
+    is_explicit = cutoff is not None
+
+    latest_unblocked = (
+        BlockedSource.query.filter(
+            BlockedSource.source_ip == source_ip,
+            BlockedSource.unblocked_at.isnot(None),
+        )
+        .order_by(BlockedSource.unblocked_at.desc())
+        .first()
+    )
+    if latest_unblocked and latest_unblocked.unblocked_at:
+        ub_dt = _as_naive_utc(latest_unblocked.unblocked_at)
+        if cutoff is None or ub_dt > cutoff:
+            cutoff = ub_dt
+            is_explicit = True
+
+    latest_resolved = (
+        ThreatIncident.query.filter(
+            ThreatIncident.source_ip == source_ip,
+            ThreatIncident.event_type == "failed_login_burst",
+            ThreatIncident.status.in_(["Resolved", "False Positive"]),
+            ThreatIncident.resolved_at.isnot(None),
+        )
+        .order_by(ThreatIncident.resolved_at.desc())
+        .first()
+    )
+    if latest_resolved and latest_resolved.resolved_at:
+        res_dt = _as_naive_utc(latest_resolved.resolved_at)
+        if cutoff is None or res_dt > cutoff:
+            cutoff = res_dt
+            is_explicit = True
+
+    if cutoff is None or since_naive > cutoff:
+        return since_naive, False
+    return cutoff, is_explicit
+
+
+def dismiss_login_warnings(source_ip=None):
+    """Clear active wrong-login warnings so the admin monitor returns cleanly to Healthy."""
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+    if source_ip:
+        _LOGIN_WARNING_DISMISSED_AT[source_ip] = now_naive
+    else:
+        _LOGIN_WARNING_DISMISSED_AT["*"] = now_naive
+    record_monitoring_log(
+        category="warning_cleared",
+        level="INFO",
+        message=f"Administrator cleared wrong-login warning state ({source_ip or 'all sources'}).",
+        source="AdminMonitor",
+        is_simulated=False,
+    )
+
+
+def _collect_login_warning_state(now_naive):
+    """Identify IPs with recent unresolved failed login attempts (triggers Warning at 2+)."""
+    since = now_naive - timedelta(seconds=300)
+    recent_failed = (
+        SecurityEvent.query.filter(
+            SecurityEvent.event_type == "failed_login_burst",
+            SecurityEvent.created_at >= since,
+        )
+        .order_by(SecurityEvent.created_at.asc())
+        .all()
+    )
+
+    by_ip = {}
+    for ev in recent_failed:
+        by_ip.setdefault(ev.source_ip, []).append(ev)
+
+    # Also surface any active blocks on login even if older than 5m
+    active_login_blocks = BlockedSource.query.filter_by(is_active=True).all()
+    for blk in active_login_blocks:
+        by_ip.setdefault(blk.source_ip, [])
+
+    login_rule = SecurityRule.query.filter_by(event_type="failed_login_burst", is_active=True).first()
+    block_threshold = login_rule.threshold_count if login_rule else 5
+
+    warnings = []
+    unresolved_attempts_total = 0
+
+    for ip, events in by_ip.items():
+        cutoff, is_explicit = get_login_streak_cutoff(ip, since)
+        active_events = [
+            ev
+            for ev in events
+            if _as_naive_utc(ev.created_at)
+            and (
+                _as_naive_utc(ev.created_at) > cutoff
+                if is_explicit
+                else _as_naive_utc(ev.created_at) >= cutoff
+            )
+        ]
+        attempts = sum(max(ev.failed_login_count, 1) for ev in active_events)
+        unresolved_attempts_total += attempts
+        active_block = BlockedSource.query.filter_by(source_ip=ip, is_active=True).first()
+
+        if attempts >= 2 or active_block:
+            last_ev = active_events[-1] if active_events else (events[-1] if events else None)
+            is_blocked = bool(active_block)
+            effective_attempts = max(attempts, block_threshold if is_blocked else attempts)
+            warnings.append(
+                {
+                    "source_ip": ip,
+                    "attempts": effective_attempts,
+                    "threshold": block_threshold,
+                    "blocked": is_blocked,
+                    "block_id": active_block.id if active_block else None,
+                    "status_label": "Blocked (Auto-Protected)" if is_blocked else "System Warning",
+                    "last_attempt_at": (
+                        last_ev.created_at.replace(tzinfo=timezone.utc).isoformat()
+                        if last_ev and last_ev.created_at
+                        else (
+                            active_block.blocked_at.replace(tzinfo=timezone.utc).isoformat()
+                            if active_block and active_block.blocked_at
+                            else None
+                        )
+                    ),
+                    "summary": (
+                        last_ev.payload_summary
+                        if last_ev and last_ev.payload_summary
+                        else (active_block.reason if active_block else f"{effective_attempts} wrong login attempts")
+                    ),
+                    "message": (
+                        f"Blocked after {effective_attempts} wrong login attempts from {ip}."
+                        if is_blocked
+                        else f"Multiple wrong login attempts ({effective_attempts}/{block_threshold}) detected from {ip}."
+                    ),
+                }
+            )
+
+    warnings.sort(key=lambda w: (w["blocked"], w["attempts"]), reverse=True)
+    return warnings, unresolved_attempts_total
 
 
 def compute_current_health():
@@ -262,6 +408,8 @@ def compute_current_health():
     critical_open_count = sum(1 for inc in open_incidents if inc.severity == "Critical")
     high_open_count = sum(1 for inc in open_incidents if inc.severity == "High")
 
+    login_warnings, unresolved_wrong_logins = _collect_login_warning_state(now)
+
     sim_api = _SIMULATED_STATE["api_status"]
     sim_db = _SIMULATED_STATE["database_status"]
     sim_svc = _SIMULATED_STATE["service_status"]
@@ -280,10 +428,26 @@ def compute_current_health():
     # Determine overall status: Healthy, Warning, Critical
     if not real_db["reachable"] or failed_components or critical_open_count > 0:
         overall_status = "Critical"
-    elif degraded_components or open_incidents_count > 0 or active_blocks_count > 0 or high_open_count > 0:
+    elif (
+        degraded_components
+        or open_incidents_count > 0
+        or active_blocks_count > 0
+        or high_open_count > 0
+        or len(login_warnings) > 0
+    ):
         overall_status = "Warning"
     else:
         overall_status = "Healthy"
+
+    status_reasons = []
+    if failed_components:
+        status_reasons.append(f"Service disruption in: {', '.join(failed_components)} (auto-healing ready)")
+    if degraded_components:
+        status_reasons.append(f"Degraded service performance in: {', '.join(degraded_components)}")
+    for lw in login_warnings:
+        status_reasons.append(lw["message"])
+    if not status_reasons and open_incidents_count > 0:
+        status_reasons.append(f"{open_incidents_count} open security alert(s) under review")
 
     # Calculate availability metric transparently from simulated + real states
     availability = 100.0
@@ -295,6 +459,7 @@ def compute_current_health():
 
     return {
         "overall_status": overall_status,
+        "status_reasons": status_reasons,
         "api_status": sim_api,
         "database_status": sim_db if real_db["reachable"] else "Failed",
         "service_status": sim_svc,
@@ -304,6 +469,8 @@ def compute_current_health():
         "active_blocks_count": active_blocks_count,
         "open_incidents_count": open_incidents_count,
         "critical_open_count": critical_open_count,
+        "login_warnings": login_warnings,
+        "recent_wrong_logins": unresolved_wrong_logins,
         "real_metrics": {
             "flask_app_status": "Running",
             "started_at": _START_UTC.isoformat(),

@@ -18,6 +18,7 @@ from routes.guards import admin_required
 from services.immune_memory import get_immune_memory_summary
 from services.monitoring_service import (
     compute_current_health,
+    dismiss_login_warnings,
     get_auto_heal_config,
     get_monitoring_logs,
     persist_health_snapshot,
@@ -98,11 +99,22 @@ def get_dashboard():
     health_series = [h.to_dict() for h in reversed(health_points)]
 
     recent_events = (
-        SecurityEvent.query.order_by(SecurityEvent.created_at.desc()).limit(8).all()
+        SecurityEvent.query.order_by(SecurityEvent.created_at.desc()).limit(10).all()
     )
     recent_incidents = (
-        ThreatIncident.query.order_by(ThreatIncident.created_at.desc()).limit(5).all()
+        ThreatIncident.query.order_by(ThreatIncident.created_at.desc()).limit(8).all()
     )
+    recent_blocks = (
+        BlockedSource.query.order_by(
+            BlockedSource.is_active.desc(), BlockedSource.blocked_at.desc()
+        )
+        .limit(8)
+        .all()
+    )
+    recent_recoveries = (
+        RecoveryAction.query.order_by(RecoveryAction.created_at.desc()).limit(6).all()
+    )
+    total_recoveries = RecoveryAction.query.filter_by(status="Completed").count()
 
     return jsonify(
         {
@@ -116,8 +128,12 @@ def get_dashboard():
                 "pending_block_approvals": pending_approvals,
                 "service_availability_pct": health["availability_pct"],
                 "open_incidents": health["open_incidents_count"],
+                "recent_wrong_logins": health.get("recent_wrong_logins", 0),
+                "total_recoveries": total_recoveries,
             },
             "health": health,
+            "login_warnings": health.get("login_warnings", []),
+            "status_reasons": health.get("status_reasons", []),
             "charts": {
                 "severity_distribution": severity_counts,
                 "daily_incident_trend": list(day_buckets.values()),
@@ -125,6 +141,8 @@ def get_dashboard():
             },
             "recent_activities": [e.to_dict() for e in recent_events],
             "recent_incidents": [i.to_dict() for i in recent_incidents],
+            "blocked_sources": [b.to_dict() for b in recent_blocks],
+            "recent_recoveries": [r.to_dict() for r in recent_recoveries],
         }
     )
 
@@ -310,15 +328,59 @@ def unblock_source(block_id):
     """Manually unblock a simulated IP address."""
     payload = request.get_json(silent=True) or {}
     actor = (payload.get("actor") or "SOC Administrator").strip()[:64]
-    block = unblock_simulated_source(block_id, actor=actor)
+    resolve_incident = bool(payload.get("resolve_incident", False))
+    block = unblock_simulated_source(block_id, actor=actor, resolve_incident=resolve_incident)
     if not block:
         return jsonify({"error": f"Blocked source {block_id} not found."}), 404
 
     persist_health_snapshot()
     return jsonify(
         {
-            "message": f"Simulated source {block.source_ip} has been unblocked.",
+            "message": f"Source {block.source_ip} has been unblocked.",
             "blocked_source": block.to_dict(),
+        }
+    )
+
+
+@api_bp.route("/alerts/clear", methods=["POST"])
+@admin_required
+def clear_login_alerts():
+    """Dismiss active wrong-login warnings and optionally resolve open login warning incidents."""
+    payload = request.get_json(silent=True) or {}
+    source_ip = (payload.get("source_ip") or "").strip() or None
+    resolve_incidents = bool(payload.get("resolve_login_incidents", True))
+
+    dismiss_login_warnings(source_ip=source_ip)
+
+    if resolve_incidents:
+        now = datetime.now(timezone.utc)
+        q = ThreatIncident.query.filter(
+            ThreatIncident.event_type == "failed_login_burst",
+            ThreatIncident.status.in_(["New", "Investigating"]),
+        )
+        if source_ip:
+            q = q.filter(ThreatIncident.source_ip == source_ip)
+        for inc in q.all():
+            inc.status = "Resolved"
+            inc.resolved_at = now
+            inc.updated_at = now
+            db.session.add(
+                IncidentHistory(
+                    incident_id=inc.id,
+                    event_stage="StatusUpdate",
+                    actor="Admin Monitor",
+                    action="Login warning cleared by administrator",
+                    notes="Reset active wrong-login alert back to Healthy baseline.",
+                )
+            )
+        db.session.commit()
+
+    health = compute_current_health()
+    persist_health_snapshot(health)
+    return jsonify(
+        {
+            "message": "Wrong-login warning cleared. System status updated.",
+            "health": health,
         }
     )
 

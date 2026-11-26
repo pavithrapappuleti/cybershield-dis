@@ -1105,6 +1105,92 @@ dialog::backdrop {
   margin: 0.4rem 0;
 }
 
+/* Simplified Admin Alert Banner & Compact Service Cards */
+.alert-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.alert-banner-content strong {
+  display: block;
+  font-size: 1rem;
+  margin-block-end: 0.2rem;
+}
+
+.alert-banner-content p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+.alert-healthy {
+  border-color: rgba(16, 185, 129, 0.45);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.alert-healthy .alert-banner-content strong {
+  color: #6ee7b7;
+}
+
+.alert-warning {
+  border-color: rgba(245, 158, 11, 0.65);
+  background: rgba(245, 158, 11, 0.14);
+}
+
+.alert-warning .alert-banner-content strong {
+  color: #fcd34d;
+}
+
+.alert-critical {
+  border-color: rgba(239, 68, 68, 0.7);
+  background: rgba(239, 68, 68, 0.16);
+}
+
+.alert-critical .alert-banner-content strong {
+  color: #fca5a5;
+}
+
+.simple-alert-item {
+  cursor: default;
+  align-items: flex-start;
+}
+
+.simple-alert-body {
+  cursor: pointer;
+  flex: 1 1 240px;
+  min-inline-size: 0;
+}
+
+.service-pills-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.65rem;
+}
+
+.service-mini-card {
+  padding: 0.65rem 0.8rem;
+  border-radius: 10px;
+  background: rgba(16, 28, 56, 0.62);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.simple-sim-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
 .mobile-only {
   display: none;
 }

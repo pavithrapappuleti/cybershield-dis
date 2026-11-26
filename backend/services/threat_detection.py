@@ -7,6 +7,7 @@ raising false-alarm incidents.
 
 from datetime import datetime, timedelta, timezone
 from models import SecurityEvent, SecurityRule
+from services.monitoring_service import _as_naive_utc, get_login_streak_cutoff
 
 
 def _default_rules_map():
@@ -70,7 +71,19 @@ def evaluate_event(
     ).all()
 
     if event_type == "failed_login_burst":
-        historical_failed = sum(ev.failed_login_count for ev in recent_events)
+        since_naive = since.replace(tzinfo=None)
+        cutoff, is_explicit_clear = get_login_streak_cutoff(source_ip, since_naive)
+        active_events = [
+            ev
+            for ev in recent_events
+            if _as_naive_utc(ev.created_at)
+            and (
+                _as_naive_utc(ev.created_at) > cutoff
+                if is_explicit_clear
+                else _as_naive_utc(ev.created_at) >= cutoff
+            )
+        ]
+        historical_failed = sum(ev.failed_login_count for ev in active_events)
         observed_count = historical_failed + max(failed_login_count, 1)
         threshold = rule.threshold_count if rule else 5
         immune_sig = f"failed_login_burst::{source_ip}"

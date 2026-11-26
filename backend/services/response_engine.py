@@ -8,7 +8,8 @@ from datetime import datetime, timedelta, timezone
 from flask import current_app
 
 from extensions import db
-from models import BlockedSource, IncidentHistory
+from models import BlockedSource, IncidentHistory, ThreatIncident
+from services.monitoring_service import record_monitoring_log
 from services.monitoring_service import record_monitoring_log
 
 
@@ -181,7 +182,7 @@ def approve_pending_block(block_id, actor="SOC Administrator"):
     return block
 
 
-def unblock_simulated_source(block_id, actor="SOC Administrator"):
+def unblock_simulated_source(block_id, actor="SOC Administrator", resolve_incident=False):
     """Manually release a simulated IP block."""
     block = db.session.get(BlockedSource, block_id)
     if not block:
@@ -202,6 +203,21 @@ def unblock_simulated_source(block_id, actor="SOC Administrator"):
                 notes="Administrator cleared temporary containment.",
             )
         )
+        if resolve_incident:
+            inc = db.session.get(ThreatIncident, block.incident_id)
+            if inc and inc.status in ("New", "Investigating"):
+                inc.status = "Resolved"
+                inc.resolved_at = now
+                inc.updated_at = now
+                db.session.add(
+                    IncidentHistory(
+                        incident_id=inc.id,
+                        event_stage="StatusUpdate",
+                        actor=actor,
+                        action="Resolved when administrator unblocked source",
+                        notes="Access restored and login warning cleared.",
+                    )
+                )
     db.session.commit()
     record_monitoring_log(
         category="manual_unblock",
