@@ -3,6 +3,10 @@
   "cleanUrls": true,
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://cybershield-dis-1.onrender.com/api/:path*"
+    },
+    {
       "source": "/admin",
       "destination": "/admin.html"
     },
